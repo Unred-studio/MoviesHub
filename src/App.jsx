@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import fetchPopularMovies from '../server/api.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 function App() {
   const [movies, setMovies] = useState([]);
@@ -96,10 +98,16 @@ function App() {
 
   return (
     <>
-      {suggestedMovies.map((movie) => (
-        //harleen code here
-        <div key={movie.id}>{movie.title}</div>
-      ))}
+
+        {suggestedMovies.map((movie) => (
+          <div class="card" style="width: 18rem;">
+          <img src="" class="card-img-top" alt="..." />
+          <div class="card-body">
+            <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+          </div>
+        </div>
+        ))}
+  );
     </>
   );
 }
