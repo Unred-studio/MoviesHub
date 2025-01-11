@@ -71,7 +71,7 @@ const fetchPopularMovies = async (start, end) => {
         movies.push(...movieData);
       }
     }
-    console.log(JSON.stringify(movies, null, 2));
+    //console.log(JSON.stringify(movies, null, 2));
     return movies;
   } catch (error) {
     console.error("Error fetching or writing movies:", error);
