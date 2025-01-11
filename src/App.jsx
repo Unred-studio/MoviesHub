@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from "react";
 import fetchPopularMovies from '../server/api.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
@@ -6,11 +6,15 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 
 
 function App() {
+  const modalRef = useRef(null);
   const [movies, setMovies] = useState([]);
+  const [showModal, setShowModal] = useState(false);  
   const [suggestedMovies, setSuggestedMovies] = useState([]);
   const [untouchedMovies, setUntouchedMovies] = useState([]);
   const [likedMovies, setLikedMovies] = useState([]);
   const [dislikedMovies, setDislikedMovies] = useState([]);
+  const [selectedMovie, setSelectedMovie] = useState(null); // Initialize selectedMovie here
+
 
   // Fetch movies and populate initial suggestions
   useEffect(() => {
@@ -74,85 +78,135 @@ function App() {
   const handleLikeMovie = (movie) => {
     setLikedMovies((prevLikedMovies) => [...prevLikedMovies, movie]);
     handleNextSuggestion(movie);
+    setShowModal(false);
   };
 
   const handleDislikeMovie = (movie) => {
     setDislikedMovies((prevDislikedMovies) => [...prevDislikedMovies, movie]);
     handleNextSuggestion(movie);
+    setShowModal(false);
   };
 
   const handleCardClick = (movie) => {
-    console.log("Card clicked:", movie); // Replace with modal logic
+    setSelectedMovie(movie); // Set the selected movie
+    if (modalRef.current) {
+      const modal = new window.bootstrap.Modal(modalRef.current);
+      modal.show(); // Show the modal
+    }
   };
-
+  
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(5, 1fr)", // 5 columns
-        gridAutoRows: "minmax(200px, auto)", // Adjust card height dynamically
-        gap: "15px", // Space between cards
-        padding: "15px", // Padding around the grid
-        margin: "15px", // Margin for spacing from the viewport
-        alignItems: "center", // Vertically align grid items
-        backgroundColor: "#f8f8f8", // Optional background
-        height: "calc(100vh - 30px)", // Ensure it fits within the viewport
-        boxSizing: "border-box", // Include padding in size calculations
-      }}
-    >
-      {suggestedMovies.map((movie, index) => (
-        <div
-          key={movie.id || movie.poster_path || index}
-          onClick={() => handleCardClick(movie)} // Handle card click
-          style={{
-            width: "180px", // Matches the image width
-            border: "1px solid #ddd", // Card border
-            borderRadius: "6px", // Rounded corners
-            overflow: "hidden", // Ensure no overflow
-            display: "flex",
-            flexDirection: "column", // Stack image and text vertically
-            justifyContent: "space-between", // Space out image and text
-            textAlign: "center", // Center-align text
-            cursor: "pointer", // Make it clickable
-            backgroundColor: "#fff", // White background
-            boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)", // Subtle shadow
-          }}
-        >
-          <img
-            src={`https://image.tmdb.org/t/p/w300${movie["poster_path"]}`} // Ensure image width matches card
-            alt={`${movie.title} Poster`}
-            style={{
-              width: "100%", // Full width of the card
-              height: "180px", // Height for the image
-              objectFit: "contain", // Prevent cropping
-              backgroundColor: "#f8f8f8", // Neutral background for empty areas
-            }}
-          />
+    <>
+      {/* Movie Grid */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(5, 1fr)", // 5 columns
+          gap: "15px",
+          padding: "15px",
+        }}
+      >
+        {suggestedMovies.map((movie, index) => (
           <div
+            key={movie.id || movie.poster_path || index}
+            onClick={() => handleCardClick(movie)}
             style={{
-              padding: "8px", // Padding around the text
-              backgroundColor: "#f8f9fa", // Light gray background
-              borderTop: "1px solid #ddd", // Divider line
+              width: "180px",
+              border: "1px solid #ddd",
+              borderRadius: "6px",
+              cursor: "pointer",
+              backgroundColor: "#fff",
+              overflow: "hidden",
+              textAlign: "center",
             }}
           >
-            <p
-              style={{
-                margin: 0, // Remove margin
-                fontWeight: "bold", // Bold text
-                fontSize: "clamp(10px, 2vw, 14px)", // Dynamically resize text
-                lineHeight: "1.2", // Adjust line height
-                whiteSpace: "nowrap", // Prevent wrapping
-                overflow: "hidden", // Hide overflowing text
-                textOverflow: "ellipsis", // Add ellipsis for long text
-              }}
-            >
-              {movie.title}
-            </p>
+            <img
+              src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
+              alt={`${movie.title} Poster`}
+              style={{ width: "100%", height: "250px", objectFit: "contain" }}
+            />
+            <p style={{ fontSize: "14px", fontWeight: "bold" }}>{movie.title}</p>
+          </div>
+        ))}
+      </div>
+  
+      {/* Modal */}
+      <div
+        className="modal fade"
+        id="staticBackdrop"
+        ref={modalRef}
+        data-bs-backdrop="static"
+        data-bs-keyboard="false"
+        tabIndex="-1"
+        aria-labelledby="staticBackdropLabel"
+        aria-hidden="true"
+      >
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
+            {/* Modal Header */}
+            <div className="modal-header">
+              <h5 className="modal-title" id="staticBackdropLabel">
+                {selectedMovie?.title || "Movie Details"}
+              </h5>
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              ></button>
+            </div>
+  
+            {/* Modal Body */}
+            <div className="modal-body text-center">
+              {selectedMovie && (
+                <>
+                  <img
+                    src={`https://image.tmdb.org/t/p/w300${selectedMovie.poster_path}`}
+                    alt={`${selectedMovie.title} Poster`}
+                    style={{
+                      width: "100%",
+                      height: "300px",
+                      objectFit: "contain",
+                      marginBottom: "15px",
+                    }}
+                  />
+                  <h5>{selectedMovie.title}</h5>
+                  <p>
+                    synopsis: {selectedMovie.overview || "No overview available."}
+                    <br />
+                    Genres: {selectedMovie.genres?.join(", ") || "N/A"}
+                    <br />
+                    Director: {selectedMovie.director || "N/A"}
+                    <br />
+                    Actors: {selectedMovie.actors?.join(", ") || "N/A"}
+                  </p>
+                </>
+              )}
+            </div>
+  
+            {/* Modal Footer */}
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => handleDislikeMovie(selectedMovie)}
+              >
+                Dislike
+              </button>
+              <button
+                type="button"
+                className="btn btn-success"
+                onClick={() => handleLikeMovie(selectedMovie)}
+              >
+                Like
+              </button>
+            </div>
           </div>
         </div>
-      ))}
-    </div>
+      </div>
+    </>
   );
+  
 }
 
 export default App;
