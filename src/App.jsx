@@ -3,6 +3,7 @@ import fetchPopularMovies from '../server/api.js';
 
 function App() {
   const [movies, setMovies] = useState([]);
+  const [suggestedMovies, setSuggestedMovies] = useState([movies.slice(0, 10)]);
   const [likedMovies, setLikedMovies] = useState([]);
   const [dislikedMovies, setDislikedMovies] = useState([]);
 
@@ -27,7 +28,7 @@ function App() {
         }
       }
       catch (err) {
-        
+
         console.log("Error while fetching movies data with dependency", err)
       }
     })
@@ -35,7 +36,10 @@ function App() {
 
   return (
     <>
-
+      {suggestedMovies.map((movie) => (
+        //harleen code here
+        <div key={movie.id}>{movie.title}</div>
+      ))}
     </>
   );
 }
