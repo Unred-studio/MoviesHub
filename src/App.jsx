@@ -8,7 +8,6 @@ import '@fortawesome/fontawesome-free/css/all.min.css';
 function App() {
   const modalRef = useRef(null);
   const [movies, setMovies] = useState([]);
-  const [showModal, setShowModal] = useState(false);  
   const [suggestedMovies, setSuggestedMovies] = useState([]);
   const [untouchedMovies, setUntouchedMovies] = useState([]);
   const [likedMovies, setLikedMovies] = useState([]);
@@ -53,9 +52,9 @@ function App() {
     setUntouchedMovies(
       movies.filter(
         (movie) =>
-          !suggestedMovies.includes(movie) &&
-          !likedMovies.includes(movie) &&
-          !dislikedMovies.includes(movie)
+          !suggestedMovies.some((sMovie) => sMovie.id === movie.id) &&
+          !likedMovies.some((lMovie) => lMovie.id === movie.id) &&
+          !dislikedMovies.some((dMovie) => dMovie.id === movie.id)
       )
     );
   }, [movies, suggestedMovies, likedMovies, dislikedMovies]);
@@ -114,41 +113,23 @@ function App() {
     };
   
     setSuggestedMovies((prevSuggestedMovies) => {
-      const index = prevSuggestedMovies.indexOf(movie);
+      const index = prevSuggestedMovies.findIndex((m) => m.id === movie.id);
   
       if (index !== -1) {
-        // Filter untouchedMovies to exclude those with strongly disliked properties
-        let filteredMovies = untouchedMovies.filter((m) => {
-          return (
-            !m.genres.some((genre) => dislikedGenre.includes(genre)) &&
-            !dislikedDirector.includes(m.director) &&
-            !m.actors.some((actor) => dislikedActors.includes(actor))
-          );
-        });
+        // Sort untouchedMovies based on scoring logic
+        const sortedMovies = untouchedMovies.sort((a, b) => scoreMovie(b) - scoreMovie(a));
+        const nextMovie = sortedMovies[0];
   
-        // Fallback to untouchedMovies if filtering leaves an empty list
-        if (filteredMovies.length === 0) {
-          filteredMovies = untouchedMovies;
-        }
-  
-        // Sort by score descending
-        filteredMovies.sort((a, b) => scoreMovie(b) - scoreMovie(a));
-  
-        // Pick the top movie
-        const nextMovie = filteredMovies[0];
         if (nextMovie) {
           const updatedSuggestions = [...prevSuggestedMovies];
           updatedSuggestions[index] = nextMovie;
   
-          // Update untouchedMovies to remove the selected movie
-          setUntouchedMovies((prevUntouched) =>
-            prevUntouched.filter((m) => m !== nextMovie)
-          );
+          // Remove the selected movie from untouchedMovies
+          setUntouchedMovies((prevUntouched) => prevUntouched.filter((m) => m.id !== nextMovie.id));
   
           return updatedSuggestions;
         }
       }
-  
       return prevSuggestedMovies;
     });
   };
@@ -157,14 +138,21 @@ function App() {
   const handleLikeMovie = (movie) => {
     setLikedMovies((prevLikedMovies) => [...prevLikedMovies, movie]);
     handleNextSuggestion(movie);
-    setShowModal(false);
+    if (modalRef.current) {
+      const modal = window.bootstrap.Modal.getInstance(modalRef.current);
+      modal.hide(); // Explicitly hide the modal
+    }
   };
-
+  
   const handleDislikeMovie = (movie) => {
     setDislikedMovies((prevDislikedMovies) => [...prevDislikedMovies, movie]);
     handleNextSuggestion(movie);
-    setShowModal(false);
+    if (modalRef.current) {
+      const modal = window.bootstrap.Modal.getInstance(modalRef.current);
+      modal.hide(); // Explicitly hide the modal
+    }
   };
+  
 
   const handleCardClick = (movie) => {
     setSelectedMovie(movie); // Set the selected movie
@@ -180,9 +168,11 @@ function App() {
       <div
         style={{
           display: "grid",
+          background: "linear-gradient(to right, #9B287B, #007AF5, #C4E0F9)",
           gridTemplateColumns: "repeat(5, 1fr)", // 5 columns
-          gap: "15px",
-          padding: "15px",
+          gap: "20px",
+          padding: "10px",
+          marginBottom: "0px",
         }}
       >
         {suggestedMovies.map((movie, index) => (
@@ -190,19 +180,21 @@ function App() {
             key={movie.id || movie.poster_path || index}
             onClick={() => handleCardClick(movie)}
             style={{
-              width: "180px",
-              border: "1px solid #ddd",
-              borderRadius: "6px",
+              width: "220px",
+              border: "8px solid rgba(125, 188, 242, 0.4)",
+              borderRadius: "12px",
               cursor: "pointer",
-              backgroundColor: "#fff",
+              backgroundColor: "#58A8EE",
               overflow: "hidden",
               textAlign: "center",
+              paddding: "10px",
+              margin: "auto",
             }}
           >
             <img
               src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
               alt={`${movie.title} Poster`}
-              style={{ width: "100%", height: "250px", objectFit: "contain" }}
+              style={{ width: "100%", height: "240px", objectFit: "cover", marginBottom: "10px",}}
             />
             <p style={{ fontSize: "14px", fontWeight: "bold" }}>{movie.title}</p>
           </div>
@@ -220,10 +212,17 @@ function App() {
         aria-labelledby="staticBackdropLabel"
         aria-hidden="true"
       >
-        <div className="modal-dialog modal-dialog-centered">
-          <div className="modal-content">
+        <div className="modal-dialog modal-dialog-centered"
+        style= {{marginTop: "5vh", marginBottom: "5vh", }}>
+          <div className="modal-content"
+          style={{ backgroundColor: "#ffe4b5"}}>
             {/* Modal Header */}
-            <div className="modal-header">
+            <div className="modal-header"
+            style={{
+              backgroundColor: "#58A8EE",
+              borderBottom: "1px solid #ddd",
+            }}
+            >
               <h5 className="modal-title" id="staticBackdropLabel">
                 {selectedMovie?.title || "Movie Details"}
               </h5>
@@ -236,7 +235,8 @@ function App() {
             </div>
   
             {/* Modal Body */}
-            <div className="modal-body text-center">
+            <div className="modal-body text-center"
+            style={{ backgroundColor: "#58A8EE", padding: "20px", }}>
               {selectedMovie && (
                 <>
                   <img
@@ -246,12 +246,13 @@ function App() {
                       width: "100%",
                       height: "300px",
                       objectFit: "contain",
-                      marginBottom: "15px",
                     }}
                   />
                   <h5>{selectedMovie.title}</h5>
-                  <p>
-                    synopsis: {selectedMovie.overview || "No overview available."}
+                  
+                
+                    <p>
+                    Synopsis: {selectedMovie.overview || "N/A"}
                     <br />
                     Genres: {selectedMovie.genres?.join(", ") || "N/A"}
                     <br />
@@ -262,25 +263,26 @@ function App() {
                 </>
               )}
             </div>
-  
+
             {/* Modal Footer */}
-            <div className="modal-footer">
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={() => handleDislikeMovie(selectedMovie)}
-              >
-                Dislike
+           <div className="modal-footer"
+           style={{ backgroundColor: "#58A8EE", borderTop: "1px solid #ddd",}}>
+            <button
+            type="button"
+            className="btn btn-danger"
+            style={{ marginRight: "auto" }} // Push Dislike button to the left
+            onClick={() => handleDislikeMovie(selectedMovie)}>
+              Dislike
               </button>
               <button
-                type="button"
-                className="btn btn-success"
-                onClick={() => handleLikeMovie(selectedMovie)}
-              >
+              type="button"
+              className="btn btn-success"
+              style={{ marginLeft: "auto" }} // Push Like button to the right
+              onClick={() => handleLikeMovie(selectedMovie)}>
                 Like
-              </button>
+                </button>
+                </div>
             </div>
-          </div>
         </div>
       </div>
     </>
