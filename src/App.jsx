@@ -168,7 +168,7 @@ function App() {
       <div
         style={{
           display: "grid",
-          background: "linear-gradient(to right, #9B287B, #007AF5, #C4E0F9)",
+          background: "linear-gradient(to right, #484748, #A4A2A4)",
           gridTemplateColumns: "repeat(5, 1fr)", // 5 columns
           gap: "20px",
           padding: "10px",
@@ -181,10 +181,11 @@ function App() {
             onClick={() => handleCardClick(movie)}
             style={{
               width: "220px",
-              border: "8px solid rgba(125, 188, 242, 0.4)",
+              border: "5px solid rgba(72, 71, 72, 0.8)",
+              opacity: "95%",
               borderRadius: "12px",
               cursor: "pointer",
-              backgroundColor: "#58A8EE",
+              backgroundColor: "#A4A2A4",
               overflow: "hidden",
               textAlign: "center",
               paddding: "10px",
@@ -215,12 +216,12 @@ function App() {
         <div className="modal-dialog modal-dialog-centered"
         style= {{marginTop: "5vh", marginBottom: "5vh", }}>
           <div className="modal-content"
-          style={{ backgroundColor: "#ffe4b5"}}>
+          style={{ backgroundColor: "#484748"}}>
             {/* Modal Header */}
             <div className="modal-header"
             style={{
-              backgroundColor: "#58A8EE",
-              borderBottom: "1px solid #ddd",
+              backgroundColor: "#A4A2A4",
+              borderBottom: "3px solid #ddd",
             }}
             >
               <h5 className="modal-title" id="staticBackdropLabel">
@@ -236,7 +237,7 @@ function App() {
   
             {/* Modal Body */}
             <div className="modal-body text-center"
-            style={{ backgroundColor: "#58A8EE", padding: "20px", }}>
+            style={{ backgroundColor: "#C2C1C2", padding: "20px", }}>
               {selectedMovie && (
                 <>
                   <img
@@ -252,8 +253,6 @@ function App() {
                   
                 
                     <p>
-                    Synopsis: {selectedMovie.overview || "N/A"}
-                    <br />
                     Genres: {selectedMovie.genres?.join(", ") || "N/A"}
                     <br />
                     Director: {selectedMovie.director || "N/A"}
@@ -266,7 +265,7 @@ function App() {
 
             {/* Modal Footer */}
            <div className="modal-footer"
-           style={{ backgroundColor: "#58A8EE", borderTop: "1px solid #ddd",}}>
+           style={{ backgroundColor: "#A4A2A4", borderTop: "3px solid #ddd",}}>
             <button
             type="button"
             className="btn btn-danger"
