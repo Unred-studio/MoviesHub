@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
+
 function App() {
   const modalRef = useRef(null);
   const [movies, setMovies] = useState([]);
@@ -13,6 +14,7 @@ function App() {
   const [likedMovies, setLikedMovies] = useState([]);
   const [dislikedMovies, setDislikedMovies] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null); // Initialize selectedMovie here
+
 
   // Fetch movies and populate initial suggestions
   useEffect(() => {
@@ -58,20 +60,99 @@ function App() {
     );
   }, [movies, suggestedMovies, likedMovies, dislikedMovies]);
 
+  function sortByFrequency(arr) {
+    // Step 1: Create a frequency map
+    const frequencyMap = arr.reduce((acc, item) => {
+      acc[item] = (acc[item] || 0) + 1;
+      return acc;
+    }, {});
+  
+    // Step 2: Sort the array by frequency and preserve order for elements with the same frequency
+    return [...new Set(arr)].sort((a, b) => frequencyMap[b] - frequencyMap[a]);
+  }
+
   const handleNextSuggestion = (movie) => {
+    const likedGenre = sortByFrequency(likedMovies.map((m) => m.genres).flat());
+    const dislikedGenre = sortByFrequency(dislikedMovies.map((m) => m.genres).flat());
+    const likedDirector = sortByFrequency(likedMovies.map((m) => m.director));
+    const dislikedDirector = sortByFrequency(dislikedMovies.map((m) => m.director));
+    const likedActors = sortByFrequency(likedMovies.map((m) => m.actors).flat());
+    const dislikedActors = sortByFrequency(dislikedMovies.map((m) => m.actors).flat());
+  
+    const scoreMovie = (movie) => {
+      let score = 0;
+  
+      // Increase score for liked genres
+      movie.genres.forEach((genre) => {
+        if (likedGenre.includes(genre)) {
+          score += likedGenre.length - likedGenre.indexOf(genre); // Higher for frequently liked genres
+        }
+        if (dislikedGenre.includes(genre)) {
+          score -= dislikedGenre.length - dislikedGenre.indexOf(genre); // Penalize disliked genres
+        }
+      });
+  
+      // Adjust score for director
+      if (likedDirector.includes(movie.director)) {
+        score += likedDirector.length - likedDirector.indexOf(movie.director);
+      }
+      if (dislikedDirector.includes(movie.director)) {
+        score -= dislikedDirector.length - dislikedDirector.indexOf(movie.director);
+      }
+  
+      // Adjust score for actors
+      movie.actors.forEach((actor) => {
+        if (likedActors.includes(actor)) {
+          score += likedActors.length - likedActors.indexOf(actor);
+        }
+        if (dislikedActors.includes(actor)) {
+          score -= dislikedActors.length - dislikedActors.indexOf(actor);
+        }
+      });
+  
+      return score;
+    };
+  
     setSuggestedMovies((prevSuggestedMovies) => {
       const index = prevSuggestedMovies.indexOf(movie);
+  
       if (index !== -1) {
-        const nextMovie = untouchedMovies[0];
+        // Filter untouchedMovies to exclude those with strongly disliked properties
+        let filteredMovies = untouchedMovies.filter((m) => {
+          return (
+            !m.genres.some((genre) => dislikedGenre.includes(genre)) &&
+            !dislikedDirector.includes(m.director) &&
+            !m.actors.some((actor) => dislikedActors.includes(actor))
+          );
+        });
+  
+        // Fallback to untouchedMovies if filtering leaves an empty list
+        if (filteredMovies.length === 0) {
+          filteredMovies = untouchedMovies;
+        }
+  
+        // Sort by score descending
+        filteredMovies.sort((a, b) => scoreMovie(b) - scoreMovie(a));
+  
+        // Pick the top movie
+        const nextMovie = filteredMovies[0];
         if (nextMovie) {
           const updatedSuggestions = [...prevSuggestedMovies];
           updatedSuggestions[index] = nextMovie;
+  
+          // Update untouchedMovies to remove the selected movie
+          setUntouchedMovies((prevUntouched) =>
+            prevUntouched.filter((m) => m !== nextMovie)
+          );
+  
           return updatedSuggestions;
         }
       }
+  
       return prevSuggestedMovies;
     });
   };
+  
 
   const handleLikeMovie = (movie) => {
     setLikedMovies((prevLikedMovies) => [...prevLikedMovies, movie]);
@@ -99,11 +180,9 @@ function App() {
       <div
         style={{
           display: "grid",
-          background: "linear-gradient(to right, #9B287B, #007AF5, #C4E0F9)",
           gridTemplateColumns: "repeat(5, 1fr)", // 5 columns
-          gap: "20px",
-          padding: "10px",
-          marginBottom: "0px",
+          gap: "15px",
+          padding: "15px",
         }}
       >
         {suggestedMovies.map((movie, index) => (
@@ -111,21 +190,19 @@ function App() {
             key={movie.id || movie.poster_path || index}
             onClick={() => handleCardClick(movie)}
             style={{
-              width: "220px",
-              border: "8px solid rgba(125, 188, 242, 0.4)",
-              borderRadius: "12px",
+              width: "180px",
+              border: "1px solid #ddd",
+              borderRadius: "6px",
               cursor: "pointer",
-              backgroundColor: "#58A8EE",
+              backgroundColor: "#fff",
               overflow: "hidden",
               textAlign: "center",
-              paddding: "10px",
-              margin: "auto",
             }}
           >
             <img
               src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
               alt={`${movie.title} Poster`}
-              style={{ width: "100%", height: "240px", objectFit: "cover", marginBottom: "10px",}}
+              style={{ width: "100%", height: "250px", objectFit: "contain" }}
             />
             <p style={{ fontSize: "14px", fontWeight: "bold" }}>{movie.title}</p>
           </div>
@@ -143,17 +220,10 @@ function App() {
         aria-labelledby="staticBackdropLabel"
         aria-hidden="true"
       >
-        <div className="modal-dialog modal-dialog-centered"
-        style= {{marginTop: "5vh", marginBottom: "5vh", }}>
-          <div className="modal-content"
-          style={{ backgroundColor: "#ffe4b5"}}>
+        <div className="modal-dialog modal-dialog-centered">
+          <div className="modal-content">
             {/* Modal Header */}
-            <div className="modal-header"
-            style={{
-              backgroundColor: "#58A8EE",
-              borderBottom: "1px solid #ddd",
-            }}
-            >
+            <div className="modal-header">
               <h5 className="modal-title" id="staticBackdropLabel">
                 {selectedMovie?.title || "Movie Details"}
               </h5>
@@ -166,8 +236,7 @@ function App() {
             </div>
   
             {/* Modal Body */}
-            <div className="modal-body text-center"
-            style={{ backgroundColor: "#58A8EE", padding: "20px", }}>
+            <div className="modal-body text-center">
               {selectedMovie && (
                 <>
                   <img
@@ -177,11 +246,12 @@ function App() {
                       width: "100%",
                       height: "300px",
                       objectFit: "contain",
+                      marginBottom: "15px",
                     }}
                   />
                   <h5>{selectedMovie.title}</h5>
                   <p>
-                    Synopsis: {selectedMovie.overview || "No overview available."}
+                    synopsis: {selectedMovie.overview || "No overview available."}
                     <br />
                     Genres: {selectedMovie.genres?.join(", ") || "N/A"}
                     <br />
@@ -192,26 +262,25 @@ function App() {
                 </>
               )}
             </div>
-
+  
             {/* Modal Footer */}
-           <div className="modal-footer"
-           style={{ backgroundColor: "#58A8EE", borderTop: "1px solid #ddd",}}>
-            <button
-            type="button"
-            className="btn btn-danger"
-            style={{ marginRight: "auto" }} // Push Dislike button to the left
-            onClick={() => handleDislikeMovie(selectedMovie)}>
-              Dislike
+            <div className="modal-footer">
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={() => handleDislikeMovie(selectedMovie)}
+              >
+                Dislike
               </button>
               <button
-              type="button"
-              className="btn btn-success"
-              style={{ marginLeft: "auto" }} // Push Like button to the right
-              onClick={() => handleLikeMovie(selectedMovie)}>
+                type="button"
+                className="btn btn-success"
+                onClick={() => handleLikeMovie(selectedMovie)}
+              >
                 Like
-                </button>
-                </div>
+              </button>
             </div>
+          </div>
         </div>
       </div>
     </>
